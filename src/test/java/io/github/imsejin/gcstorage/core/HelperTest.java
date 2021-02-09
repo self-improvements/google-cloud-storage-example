@@ -25,9 +25,12 @@
 package io.github.imsejin.gcstorage.core;
 
 import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.BlobId;
+import io.github.imsejin.common.util.DateTimeUtils;
 import io.github.imsejin.common.util.FilenameUtils;
 import io.github.imsejin.common.util.StringUtils;
 import io.github.imsejin.gcstorage.constant.SearchPolicy;
+import io.github.imsejin.gcstorage.util.MimeTypeUtils;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.*;
 
@@ -253,9 +256,9 @@ class HelperTest {
     }
 
     @Test
-    void downloadWithBlob() {
+    void downloadAsOriginName() {
         // given
-        String blobName = "user_data/db_list/2021";
+        String blobName = "user_data/db_list/2019";
         Blob blob = helper.getLastBlob(blobName, true);
         assertThat(blob).isNotNull();
         Path dest = Paths.get("/data", "google-cloud-storage", "downloads");
@@ -268,7 +271,70 @@ class HelperTest {
                 .isNotEmpty()
                 .exists()
                 .hasName(Helper.toSimpleName(blob.getName()))
-                .hasSize(blob.getSize());
+                .hasSize(blob.getSize())
+                .hasBinaryContent(blob.getContent());
+    }
+
+    @Test
+    void downloadAsNewName() {
+        // given
+        String blobName = "user_data/db_list/2021";
+        Blob blob = helper.getLastBlob(blobName, true);
+        assertThat(blob).isNotNull();
+        Path dest = Paths.get("/data", "google-cloud-storage", "downloads");
+
+        // when
+        String extension = helper.toFileExtension(blob.getName());
+        String newFilename = String.format("db_list_%s.%s", DateTimeUtils.now(), extension);
+        File file = helper.download(blob, dest, newFilename);
+
+        // then
+        assertThat(file)
+                .isNotEmpty()
+                .exists()
+                .hasName(newFilename)
+                .hasSize(blob.getSize())
+                .hasBinaryContent(blob.getContent());
+    }
+
+    @Test
+    void uploadSmallFile() {
+        // given
+        Blob blob = helper.getLastBlob("user_data/db_list/2021", true);
+        Path dest = Paths.get("/data", "google-cloud-storage", "downloads");
+        File file = helper.download(blob, dest);
+
+        // when
+        BlobId blobId = BlobId.of(BUCKET_NAME, "test/uploaded-small-file." + FilenameUtils.extension(file));
+        helper.upload(blobId, file);
+
+        // then
+        Blob actual = helper.getBlob(blobId.getName());
+        assertThat(actual)
+                .isNotNull()
+                .returns(true, Blob::exists)
+                .returns(file.length(), Blob::getSize)
+                .returns(MimeTypeUtils.getMimeType(file), Blob::getContentType);
+    }
+
+    @Test
+    void uploadBigFile() {
+        // given
+        Blob blob = helper.getLastBlob("lifecycle-images/.processed/", true);
+        Path dest = Paths.get("/data", "google-cloud-storage", "downloads");
+        File file = helper.download(blob, dest);
+
+        // when
+        BlobId blobId = BlobId.of(BUCKET_NAME, "test/uploaded-big-file." + FilenameUtils.extension(file));
+        helper.upload(blobId, file);
+
+        // then
+        Blob actual = helper.getBlob(blobId.getName());
+        assertThat(actual)
+                .isNotNull()
+                .returns(true, Blob::exists)
+                .returns(file.length(), Blob::getSize)
+                .returns(MimeTypeUtils.getMimeType(file), Blob::getContentType);
     }
 
 }
