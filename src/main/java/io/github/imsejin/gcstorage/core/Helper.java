@@ -66,8 +66,6 @@ public class Helper {
 
     private final Storage storage;
 
-    ///////////////////////////////// Getters ///////////////////////////////////
-
     /**
      * Checks whether the blob exists or not.
      *
@@ -200,8 +198,6 @@ public class Helper {
         return generateURL(bucketName, blobName, null);
     }
 
-    /////////////////////////////////// Downloaders ///////////////////////////////////
-
     /**
      * Returns URL of the blob.
      *
@@ -225,6 +221,8 @@ public class Helper {
 
         return builder.build().toURL();
     }
+
+    ///////////////////////////////// Getters ///////////////////////////////////
 
     /**
      * Returns the blob.
@@ -310,8 +308,6 @@ public class Helper {
                 .collect(toList());
     }
 
-    /////////////////////////////////// Uploaders ///////////////////////////////////
-
     /**
      * 해당 `Blob`을 다운로드하거나, 디렉터리일 경우 최하위의 마지막 파일을 다운로드할 수 있는 URL을 가져온다.<br>
      * (같은 경로에 디렉터리와 파일이 있을 경우, 파일과 디렉터리 중 무엇을 우선으로 탐색할지 결정해야 한다.)
@@ -360,6 +356,8 @@ public class Helper {
         return Lists.newArrayList(blobPage.iterateAll()).stream().filter(Objects::nonNull).collect(toList());
     }
 
+    /////////////////////////////////// Downloaders ///////////////////////////////////
+
     /**
      * Downloads the blob and returns a file of the blob.
      *
@@ -378,8 +376,6 @@ public class Helper {
         Blob blob = getBlob(blobName);
         return download(blob, dest, null);
     }
-
-    /////////////////////////////////// Modifiers ///////////////////////////////////
 
     /**
      * Downloads the blob and returns a file of the blob.
@@ -449,6 +445,8 @@ public class Helper {
         return path.toFile();
     }
 
+    /////////////////////////////////// Uploaders ///////////////////////////////////
+
     /**
      * Uploads a file to storage.
      *
@@ -500,7 +498,7 @@ public class Helper {
         uploadToStorage(storage, blobInfo, file);
     }
 
-    /////////////////////////////////// Converters ///////////////////////////////////
+    /////////////////////////////////// Modifiers ///////////////////////////////////
 
     /**
      * Moves the blob to the specific place.
@@ -613,7 +611,6 @@ public class Helper {
      *
      * @param blobName name of blob
      * @return whether the blob is successfully deleted
-     * @Description :
      */
     public boolean delete(@NonNull String blobName) {
         Blob blob = storage.get(BlobId.of(bucketName, blobName));
@@ -621,6 +618,8 @@ public class Helper {
         if (blob == null || !blob.exists()) return false;
         return blob.delete();
     }
+
+    /////////////////////////////////// Converters ///////////////////////////////////
 
     /**
      * Returns file extension of the blob.
