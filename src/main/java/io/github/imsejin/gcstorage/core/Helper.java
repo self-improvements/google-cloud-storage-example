@@ -441,11 +441,9 @@ public class Helper {
         // 새로운 파일명을 지정하지 않은 경우
         if (StringUtils.isNullOrBlank(newFilename)) newFilename = toSimpleName(blob.getName());
 
+        if (Files.notExists(dest)) Files.createDirectories(dest);
+
         Path path = Paths.get(dest.toString(), newFilename);
-
-        Path directoryPath = path.getParent();
-        if (Files.notExists(directoryPath)) Files.createDirectories(directoryPath);
-
         blob.downloadTo(path);
 
         return path.toFile();
