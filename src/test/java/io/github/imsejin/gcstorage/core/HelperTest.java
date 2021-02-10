@@ -143,7 +143,8 @@ class HelperTest {
     }
 
     @Test
-    void toBlobName() {
+    @DisplayName("Convert: URL to name of the blob")
+    void convertURLToBlobName() {
         // given
         String blobName = "user_data/db_list/topic/db_list_20200320_immune.xlsx";
 
@@ -159,7 +160,8 @@ class HelperTest {
     }
 
     @Test
-    void toSimpleName() {
+    @DisplayName("Convert: name of the blob to simple name")
+    void convertBlobNameToSimpleName() {
         // given
         String filename = "db_list_20200320_instant.xlsx";
         String blobName = "user_data/db_list/topic/" + filename;
@@ -175,7 +177,8 @@ class HelperTest {
 
     @Test
     @SneakyThrows
-    void toURL() {
+    @DisplayName("Convert: name of the blob to URL")
+    void convertBlobNameToURL() {
         // given
         String blobName = "user_data/db_list/topic/db_list_20200320_mask.xlsx";
 
@@ -201,7 +204,8 @@ class HelperTest {
     }
 
     @Test
-    void toFileExtension() {
+    @DisplayName("Convert: name of the blob to file extension")
+    void convertBlobNameToFileExtension() {
         // given
         String blobName = "board-attachments/20200325/opensurvey_trend_wellness_2019_202002125101815.pdf";
 
@@ -216,7 +220,8 @@ class HelperTest {
 
     @Test
     @SneakyThrows
-    void testToURL() {
+    @DisplayName("Convert: the blob to URL")
+    void convertBlobToURL() {
         // given
         String blobName = "board-attachments/20200325/opensurvey_trend_online_grocery_2019_202002125101533.pdf";
 
@@ -242,7 +247,8 @@ class HelperTest {
     }
 
     @Test
-    void toBlob() {
+    @DisplayName("Convert: URL to the blob")
+    void convertURLToBlob() {
         // given
         Blob lastBlob = helper.getLastBlob("app_img/", true);
         assertThat(lastBlob).isNotNull();
@@ -325,7 +331,8 @@ class HelperTest {
         File file = helper.download(blob, dest);
 
         // when
-        BlobId blobId = BlobId.of(BUCKET_NAME, "test/uploaded-big-file." + FilenameUtils.extension(file));
+        String blobName = "test/uploaded-big-file." + FilenameUtils.extension(file);
+        BlobId blobId = BlobId.of(BUCKET_NAME, blobName);
         helper.upload(blobId, file);
 
         // then
