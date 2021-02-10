@@ -42,9 +42,11 @@ import org.apache.http.client.utils.URIBuilder;
 
 import javax.annotation.Nullable;
 import java.io.File;
-import java.io.FileInputStream;
+import java.io.InputStream;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.nio.ByteBuffer;
+import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -97,12 +99,35 @@ public class Helper {
         blobs.sort(Comparator.comparing(orderByDirectory).thenComparing(Blob::getName));
     }
 
+    /**
+     * Uploads a file to storage.
+     *
+     * <p> When length of a file is less than 1MB, gets all bytes from a file
+     * and pass them on instance of storage to create a blob.
+     *
+     * <p> When the length is greater than or equal to 1MB, reads all bytes with a buffer
+     * and pass them on {@link WriteChannel} of storage to create a blob.
+     *
+     * <p> The following code has a problem that {@link WritableByteChannel} can't receive
+     * more than 2GB of data transferred by {@link java.nio.channels.FileChannel}.
+     *
+     * <pre>
+     *  try (FileInputStream in = new FileInputStream(file);
+     *          WriteChannel writableChannel = storage.writer(blobInfo)) {
+     *      in.getChannel().transferTo(0, Long.MAX_VALUE, writableChannel);
+     *  }
+     * </pre>
+     *
+     * @param storage  instance of storage
+     * @param blobInfo information of the blob
+     * @param file     file to be uploaded
+     */
     @SneakyThrows
     private static void uploadToStorage(Storage storage, BlobInfo blobInfo, File file) {
         Path path = file.toPath();
 
-        // For small files.
-        if (file.length() < 1_000_000) {
+        // For a small file.
+        if (file.length() < 1_048_576) {
             byte[] bytes = Files.readAllBytes(path);
             storage.create(blobInfo, bytes);
 
@@ -110,13 +135,17 @@ public class Helper {
         }
 
         /*
-         * For big files.
-         * When content is not available or large (1MB or more),
+         * For a big file.
+         * When content is not available or large(1MB or more),
          * it is recommended to write it in chunks via the blob's channel writer.
          */
-        try (FileInputStream in = new FileInputStream(file);
+        byte[] buffer = new byte[16_384];
+        try (InputStream in = Files.newInputStream(path);
              WriteChannel writableChannel = storage.writer(blobInfo)) {
-            in.getChannel().transferTo(0, Long.MAX_VALUE, writableChannel);
+            int limit;
+            while ((limit = in.read(buffer)) >= 0) {
+                writableChannel.write(ByteBuffer.wrap(buffer, 0, limit));
+            }
         }
     }
 
