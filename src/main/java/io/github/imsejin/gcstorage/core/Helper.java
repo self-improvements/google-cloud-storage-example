@@ -170,7 +170,7 @@ public class Helper {
     }
 
     /**
-     * `버킷 내 파일경로`를 받아 파일명을 추출한다.
+     * Converts name of the blob to simple name.
      *
      * <pre>
      * String blobName1 = "goods/5bf62022ff2e9e001090fba9/5bf62022ff2e9e001090fba9_label1";
@@ -179,6 +179,9 @@ public class Helper {
      * String blobName2 = "goods/5bf62022ff2e9e001090fba9/5bf62022ff2e9e001090fba9_label1.jpg";
      * toSimpleName(blobName2) // "5bf62022ff2e9e001090fba9_label1.jpg"
      * </pre>
+     *
+     * @param blobName name of the blob
+     * @return simple name
      */
     public static String toSimpleName(@NonNull String blobName) {
         int i = blobName.lastIndexOf('/');
@@ -483,6 +486,7 @@ public class Helper {
      * String bucketName = "steady-copilot-206205.appspot.com";
      * String blobName = "goods/5bf62022ff2e9e001090fba9/5bf62022ff2e9e001090fba9_label1";
      * BlobId blobId = BlobId.of(bucketName, blobName);
+     *
      * File file = new File("/data/product/images", "product_image.jpeg");
      *
      * upload(blobId, file);
