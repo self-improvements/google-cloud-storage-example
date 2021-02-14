@@ -34,10 +34,7 @@ import io.github.imsejin.common.util.StringUtils;
 import io.github.imsejin.gcstorage.constant.SearchPolicy;
 import io.github.imsejin.gcstorage.exception.NoSuchBlobException;
 import io.github.imsejin.gcstorage.util.MimeTypeUtils;
-import lombok.AccessLevel;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
+import lombok.*;
 import org.apache.http.client.utils.URIBuilder;
 
 import javax.annotation.Nullable;
@@ -64,6 +61,7 @@ public class Helper {
 
     private static final String TOKEN_KEY = "firebaseStorageDownloadTokens";
 
+    @Getter
     private final String bucketName;
 
     private final Storage storage;
