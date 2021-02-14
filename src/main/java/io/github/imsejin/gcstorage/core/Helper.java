@@ -77,11 +77,21 @@ public class Helper {
      * @throws NoSuchBlobException if the blob doesn't exist
      */
     private static Blob checkExistence(Blob blob, BlobId blobId) {
-        if (blob == null || !blob.exists()) {
+        if (!exists(blob)) {
             throw new NoSuchBlobException("Could not find the blob: %s/%s", blobId.getBucket(), blobId.getName());
         }
 
         return blob;
+    }
+
+    /**
+     * Returns whether the blob exists or not.
+     *
+     * @param blob blob
+     * @return whether the blob exists or not
+     */
+    public static boolean exists(Blob blob) {
+        return blob != null && blob.exists();
     }
 
     private static void sortByDirectory(List<Blob> blobs, boolean dirFirst) {
