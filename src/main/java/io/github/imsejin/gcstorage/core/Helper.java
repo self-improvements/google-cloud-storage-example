@@ -57,7 +57,7 @@ import static java.util.stream.Collectors.toList;
  * Helper for Google Cloud Storage(Firebase Storage).
  */
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
-public class Helper {
+public final class Helper {
 
     private static final String TOKEN_KEY = "firebaseStorageDownloadTokens";
 
@@ -411,6 +411,7 @@ public class Helper {
      * @param blobName name of the blob
      * @param dest     destination
      * @return file of the blob
+     * @throws NoSuchBlobException if the blob doesn't exist
      */
     public File download(String blobName, Path dest) {
         Blob blob = getBlob(blobName);
@@ -432,6 +433,7 @@ public class Helper {
      * @param dest        destination
      * @param newFilename name of the downloaded file
      * @return file of the blob
+     * @throws NoSuchBlobException if the blob doesn't exist
      */
     public File download(String blobName, Path dest, @Nullable String newFilename) {
         Blob blob = getBlob(blobName);
@@ -555,15 +557,11 @@ public class Helper {
      * @param blobName    old name of the blob
      * @param newBlobName new name of the blob
      * @return new name of the blob or null
+     * @throws NoSuchBlobException if the blob doesn't exist
      */
     public Blob move(@NonNull String blobName, String newBlobName) {
         Blob blob = getBlob(blobName);
-
-        CopyWriter copyWriter = blob.copyTo(BlobId.of(bucketName, newBlobName));
-        Blob copiedBlob = copyWriter.getResult();
-        blob.delete();
-
-        return copiedBlob;
+        return move(blob, newBlobName);
     }
 
     /**
@@ -654,10 +652,7 @@ public class Helper {
      * @return whether the blob is successfully deleted
      */
     public boolean delete(@NonNull String blobName) {
-        Blob blob = storage.get(BlobId.of(bucketName, blobName));
-
-        if (blob == null || !blob.exists()) return false;
-        return blob.delete();
+        return storage.delete(BlobId.of(bucketName, blobName));
     }
 
     /////////////////////////////////// Converters ///////////////////////////////////
