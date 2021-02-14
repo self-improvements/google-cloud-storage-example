@@ -26,6 +26,8 @@ package io.github.imsejin.gcstorage.core;
 
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
+import io.github.imsejin.common.constant.DateType;
+import io.github.imsejin.common.util.CollectionUtils;
 import io.github.imsejin.common.util.DateTimeUtils;
 import io.github.imsejin.common.util.FilenameUtils;
 import io.github.imsejin.common.util.StringUtils;
@@ -44,6 +46,9 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.function.Predicate;
 
+import static io.github.imsejin.common.constant.DateType.*;
+import static io.github.imsejin.common.util.DateTimeUtils.today;
+import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.*;
 
 class HelperTest {
@@ -342,6 +347,92 @@ class HelperTest {
                 .returns(true, Blob::exists)
                 .returns(file.length(), Blob::getSize)
                 .returns(MimeTypeUtils.getMimeType(file), Blob::getContentType);
+    }
+
+    @Test
+    void move() {
+        // given
+        String target = "test";
+        List<Blob> blobs = helper.getBlobs(target + '/', SearchPolicy.FILES).stream()
+                .filter(b -> helper.toFileExtension(b.getName()).equals("txt"))
+                .collect(toList());
+        if (CollectionUtils.isNullOrEmpty(blobs)) return;
+
+        // when:1
+        Blob blob = blobs.get(0);
+
+        // then:1
+        assertThat(blob).returns(true, Blob::exists);
+        System.out.printf("oldBlob: %s\n", blob);
+
+        // when:2
+        String newSimpleName = "renamed-" + DateTimeUtils.now() + ".txt";
+        String newBlobName = String.format("%s/%s/%s/%s/%s", target, today(YEAR), today(MONTH), today(DAY), newSimpleName);
+        Blob movedBlob = helper.move(blob, newBlobName);
+
+        // then:2
+        assertThat(blob)
+                .returns(false, Blob::exists);
+        assertThat(movedBlob)
+                .isNotNull()
+                .returns(true, Blob::exists)
+                .returns(newBlobName, Blob::getName);
+        System.out.printf("oldBlob: %s, newBlob: %s\n", blob, movedBlob);
+    }
+
+    @Test
+    void rename() {
+        // given
+        String target = "test/";
+        List<Blob> blobs = helper.getBlobs(target, SearchPolicy.FILES).stream()
+                .filter(b -> helper.toFileExtension(b.getName()).equals("txt"))
+                .collect(toList());
+        if (CollectionUtils.isNullOrEmpty(blobs)) return;
+
+        // when:1
+        Blob blob = blobs.get(0);
+
+        // then:1
+        assertThat(blob).returns(true, Blob::exists);
+        System.out.printf("oldBlob: %s\n", blob);
+
+        // when:2
+        String newSimpleName = "renamed-" + DateTimeUtils.now() + ".txt";
+        Blob renamedBlob = helper.rename(blob, newSimpleName);
+
+        // then:2
+        String newBlobName = target + newSimpleName;
+        assertThat(blob)
+                .returns(false, Blob::exists);
+        assertThat(renamedBlob)
+                .isNotNull()
+                .returns(true, Blob::exists)
+                .returns(newBlobName, Blob::getName);
+        System.out.printf("oldBlob: %s, newBlob: %s\n", blob, renamedBlob);
+    }
+
+    @Test
+    void delete() {
+        // given
+        List<Blob> blobs = helper.getBlobs("test/", SearchPolicy.FILES).stream()
+                .filter(b -> helper.toFileExtension(b.getName()).equals("txt"))
+                .collect(toList());
+        if (CollectionUtils.isNullOrEmpty(blobs)) return;
+
+        // when:1
+        Blob blob = blobs.get(0);
+
+        // then:1
+        assertThat(blob).returns(true, Blob::exists);
+
+        // when:2
+        String blobName = blob.getName();
+        boolean deleted = helper.delete(blobName);
+
+        // then:2
+        assertThat(deleted).isTrue();
+        assertThat(blob).returns(false, Blob::exists);
+        System.out.println(blob);
     }
 
 }
