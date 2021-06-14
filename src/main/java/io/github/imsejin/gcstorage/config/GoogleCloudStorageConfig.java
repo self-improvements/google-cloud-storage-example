@@ -58,7 +58,7 @@ public final class GoogleCloudStorageConfig {
 //        scopes.add(StorageScopes.DEVSTORAGE_READ_ONLY);
 //        scopes.add(StorageScopes.DEVSTORAGE_READ_WRITE);
 
-        InputStream in = GoogleCloudStorageConfig.class.getClassLoader()
+        InputStream in = Thread.currentThread().getContextClassLoader()
                 .getResourceAsStream(SERVICE_CREDENTIAL_PATHNAME);
 
         assert in != null;

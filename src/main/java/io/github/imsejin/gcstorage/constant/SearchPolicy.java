@@ -40,7 +40,7 @@ public enum SearchPolicy {
     /**
      * Will find only files.
      */
-    FILES((Blob b) -> !b.isDirectory() && b.exists()),
+    FILES(blob -> !blob.isDirectory() && blob.exists()),
 
     /**
      * Will find only directories.
@@ -50,7 +50,7 @@ public enum SearchPolicy {
     /**
      * Will find files or directories.
      */
-    ALL((Blob b) -> b.isDirectory() || b.exists());
+    ALL(blob -> blob.isDirectory() || blob.exists());
 
     private final Predicate<Blob> condition;
 
