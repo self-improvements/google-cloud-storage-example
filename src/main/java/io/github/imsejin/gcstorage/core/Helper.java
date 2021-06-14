@@ -29,6 +29,7 @@ import com.google.cloud.WriteChannel;
 import com.google.cloud.storage.*;
 import com.google.cloud.storage.Storage.BlobListOption;
 import com.google.common.collect.Lists;
+import io.github.imsejin.common.assertion.Asserts;
 import io.github.imsejin.common.util.CollectionUtils;
 import io.github.imsejin.common.util.StringUtils;
 import io.github.imsejin.gcstorage.constant.SearchPolicy;
@@ -38,7 +39,9 @@ import lombok.*;
 import org.apache.http.client.utils.URIBuilder;
 
 import javax.annotation.Nullable;
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -59,6 +62,11 @@ import static java.util.stream.Collectors.toList;
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public final class Helper {
 
+    /**
+     * 1 MB
+     */
+    private static final int BIG_FILE_THRESHOLD = (int) Math.pow(2, 20);
+
     private static final String TOKEN_KEY = "firebaseStorageDownloadTokens";
 
     @Getter
@@ -75,9 +83,9 @@ public final class Helper {
      * @throws NoSuchBlobException if the blob doesn't exist
      */
     private static Blob checkExistence(Blob blob, BlobId blobId) {
-        if (!exists(blob)) {
-            throw new NoSuchBlobException("Could not find the blob: %s/%s", blobId.getBucket(), blobId.getName());
-        }
+        Asserts.that(blob != null && blob.exists())
+                .as("Could not find the blob: '{0}/{1}'", blobId.getBucket(), blobId.getName())
+                .exception(NoSuchBlobException::new).isTrue();
 
         return blob;
     }
@@ -130,12 +138,11 @@ public final class Helper {
      * @param blobInfo information of the blob
      * @param file     file to be uploaded
      */
-    @SneakyThrows
-    private static void uploadToStorage(Storage storage, BlobInfo blobInfo, File file) {
+    private static void uploadToStorage(Storage storage, BlobInfo blobInfo, File file) throws IOException {
         Path path = file.toPath();
 
         // For a small file.
-        if (file.length() < 1_048_576) {
+        if (file.length() < BIG_FILE_THRESHOLD) {
             byte[] bytes = Files.readAllBytes(path);
             storage.create(blobInfo, bytes);
 
@@ -149,6 +156,29 @@ public final class Helper {
          */
         byte[] buffer = new byte[16_384];
         try (InputStream in = Files.newInputStream(path);
+             WriteChannel writableChannel = storage.writer(blobInfo)) {
+            int limit;
+            while ((limit = in.read(buffer)) >= 0) {
+                writableChannel.write(ByteBuffer.wrap(buffer, 0, limit));
+            }
+        }
+    }
+
+    private static void uploadToStorage(Storage storage, BlobInfo blobInfo, byte[] content) throws IOException {
+        // For a small file.
+        if (content.length < BIG_FILE_THRESHOLD) {
+            storage.create(blobInfo, content);
+
+            return;
+        }
+
+        /*
+         * For a big file.
+         * When content is not available or large(1MB or more),
+         * it is recommended to write it in chunks via the blob's channel writer.
+         */
+        byte[] buffer = new byte[16_384];
+        try (InputStream in = new ByteArrayInputStream(content);
              WriteChannel writableChannel = storage.writer(blobInfo)) {
             int limit;
             while ((limit = in.read(buffer)) >= 0) {
@@ -538,7 +568,73 @@ public final class Helper {
                 .setMetadata(meta)
                 .build();
 
-        uploadToStorage(storage, blobInfo, file);
+        try {
+            uploadToStorage(storage, blobInfo, file);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Uploads bytes to storage.
+     *
+     * <pre><code>
+     * String bucketName = "steady-copilot-206205.appspot.com";
+     * String blobName = "goods/5bf62022ff2e9e001090fba9/5bf62022ff2e9e001090fba9_label1";
+     * BlobId blobId = BlobId.of(bucketName, blobName);
+     *
+     * String text = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. "
+     *         + "Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, "
+     *         + "when an unknown printer took a galley of type and scrambled it to make a type specimen book";
+     * byte[] content = text.getBytes();
+     *
+     * upload(blobId, content);
+     * </code></pre>
+     *
+     * @param blobId  id of the blob
+     * @param content file content
+     */
+    public void upload(BlobId blobId, byte[] content) {
+        upload(blobId, content, null);
+    }
+
+    /**
+     * Uploads a file to storage with the specific MIME-Type.
+     * If MIME-Type is empty, sets 'application/octet-stream'.
+     *
+     * <pre><code>
+     * String bucketName = "steady-copilot-206205.appspot.com";
+     * String blobName = "goods/5bf62022ff2e9e001090fba9/5bf62022ff2e9e001090fba9_label1";
+     * BlobId blobId = BlobId.of(bucketName, blobName);
+     *
+     * String text = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. "
+     *         + "Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, "
+     *         + "when an unknown printer took a galley of type and scrambled it to make a type specimen book";
+     * byte[] content = text.getBytes();
+     * String mimeType = "text/plain";
+     *
+     * upload(blobId, content, mimeType);
+     * </code></pre>
+     *
+     * @param blobId   id of the blob
+     * @param content  file content
+     * @param mimeType MIME-Type of the file
+     */
+    public void upload(BlobId blobId, byte[] content, @Nullable String mimeType) {
+        Map<String, String> meta = new HashMap<>();
+        meta.put(TOKEN_KEY, UUID.randomUUID().toString());
+
+        String contentType = StringUtils.ifNullOrBlank(mimeType, "application/octet-stream");
+        BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
+                .setContentType(contentType)
+                .setMetadata(meta)
+                .build();
+
+        try {
+            uploadToStorage(storage, blobInfo, content);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /////////////////////////////////// Modifiers ///////////////////////////////////
