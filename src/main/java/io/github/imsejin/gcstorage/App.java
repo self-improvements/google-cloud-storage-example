@@ -25,11 +25,12 @@
 package io.github.imsejin.gcstorage;
 
 import com.google.cloud.storage.Blob;
-import io.github.imsejin.common.util.DateTimeUtils;
+import io.github.imsejin.common.constant.DateType;
 import io.github.imsejin.gcstorage.constant.SearchPolicy;
 import io.github.imsejin.gcstorage.core.Helper;
 import io.github.imsejin.gcstorage.core.HelperFactory;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class App {
@@ -38,7 +39,8 @@ public class App {
         String bucketName = "steady-copilot-206205.appspot.com";
         Helper helper = HelperFactory.create(bucketName);
 
-        String blobName = String.format("lifecycle-images/%s/", DateTimeUtils.today());
+        String today = LocalDate.now().format(DateType.F_DATE.getFormatter());
+        String blobName = String.format("lifecycle-images/%s/", today);
         List<Blob> blobs = helper.getBlobs(blobName, SearchPolicy.ALL);
         blobs.forEach(System.out::println);
     }

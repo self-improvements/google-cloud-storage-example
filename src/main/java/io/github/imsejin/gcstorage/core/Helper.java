@@ -38,7 +38,7 @@ import io.github.imsejin.gcstorage.util.MimeTypeUtils;
 import lombok.*;
 import org.apache.http.client.utils.URIBuilder;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -83,9 +83,11 @@ public final class Helper {
      * @throws NoSuchBlobException if the blob doesn't exist
      */
     private static Blob checkExistence(Blob blob, BlobId blobId) {
-        Asserts.that(blob != null && blob.exists())
-                .as("Could not find the blob: '{0}/{1}'", blobId.getBucket(), blobId.getName())
-                .exception(NoSuchBlobException::new).isTrue();
+        Asserts.that(blob)
+                .describedAs("Could not find the blob: '{0}/{1}'", blobId.getBucket(), blobId.getName())
+                .thrownBy(NoSuchBlobException::new)
+                .isNotNull()
+                .is(Blob::exists);
 
         return blob;
     }

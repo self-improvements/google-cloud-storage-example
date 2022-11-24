@@ -26,8 +26,8 @@ package io.github.imsejin.gcstorage.core;
 
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
+import io.github.imsejin.common.constant.DateType;
 import io.github.imsejin.common.util.CollectionUtils;
-import io.github.imsejin.common.util.DateTimeUtils;
 import io.github.imsejin.common.util.FilenameUtils;
 import io.github.imsejin.common.util.StringUtils;
 import io.github.imsejin.gcstorage.constant.SearchPolicy;
@@ -43,11 +43,10 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.function.Predicate;
 
-import static io.github.imsejin.common.constant.DateType.*;
-import static io.github.imsejin.common.util.DateTimeUtils.today;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -220,7 +219,7 @@ class HelperTest {
         // then
         assertThat(extension)
                 .isNotBlank()
-                .isEqualTo(FilenameUtils.extension(new File(blobName)));
+                .isEqualTo(FilenameUtils.getExtension(blobName));
     }
 
     @Test
@@ -296,7 +295,8 @@ class HelperTest {
 
         // when
         String extension = helper.toFileExtension(blob.getName());
-        String newFilename = String.format("db_list_%s.%s", DateTimeUtils.now(), extension);
+        String today = LocalDate.now().format(DateType.F_DATE.getFormatter());
+        String newFilename = String.format("db_list_%s.%s", today, extension);
         File file = helper.download(blob, dest, newFilename);
 
         // then
@@ -316,7 +316,8 @@ class HelperTest {
         File file = helper.download(blob, dest);
 
         // when
-        BlobId blobId = BlobId.of(BUCKET_NAME, "test/uploaded-small-file." + FilenameUtils.extension(file));
+        String blobName = "test/uploaded-small-file." + FilenameUtils.getExtension(file.getName());
+        BlobId blobId = BlobId.of(BUCKET_NAME, blobName);
         helper.upload(blobId, file);
 
         // then
@@ -336,7 +337,7 @@ class HelperTest {
         File file = helper.download(blob, dest);
 
         // when
-        String blobName = "test/uploaded-big-file." + FilenameUtils.extension(file);
+        String blobName = "test/uploaded-big-file." + FilenameUtils.getExtension(file.getName());
         BlobId blobId = BlobId.of(BUCKET_NAME, blobName);
         helper.upload(blobId, file);
 
@@ -366,8 +367,10 @@ class HelperTest {
         System.out.printf("oldBlob: %s\n", blob);
 
         // when:2
-        String newSimpleName = "renamed-" + DateTimeUtils.now() + ".txt";
-        String newBlobName = String.format("%s/%s/%s/%s/%s", target, today(YEAR), today(MONTH), today(DAY), newSimpleName);
+        LocalDate now = LocalDate.now();
+        String today = now.format(DateType.F_DATE.getFormatter());
+        String newSimpleName = "renamed-" + today + ".txt";
+        String newBlobName = String.format("%s/%s/%s", target, today, newSimpleName);
         Blob movedBlob = helper.move(blob, newBlobName);
 
         // then:2
@@ -397,7 +400,8 @@ class HelperTest {
         System.out.printf("oldBlob: %s\n", blob);
 
         // when:2
-        String newSimpleName = "renamed-" + DateTimeUtils.now() + ".txt";
+        String now = LocalDate.now().format(DateType.ALL.getFormatter());
+        String newSimpleName = "renamed-" + now + ".txt";
         Blob renamedBlob = helper.rename(blob, newSimpleName);
 
         // then:2
