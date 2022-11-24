@@ -25,12 +25,12 @@
 package io.github.imsejin.gcstorage.core;
 
 import io.github.imsejin.gcstorage.config.GoogleCloudStorageConfig;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
+@NoArgsConstructor(access = AccessLevel.PACKAGE)
 public final class HelperFactory {
-
-    private HelperFactory() {
-    }
 
     public static Helper create(@NonNull String bucketName) {
         return new Helper(bucketName, GoogleCloudStorageConfig.STORAGE);

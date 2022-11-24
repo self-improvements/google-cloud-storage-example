@@ -34,7 +34,7 @@ import lombok.SneakyThrows;
 
 import java.io.File;
 import java.io.InputStream;
-import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 public final class GoogleCloudStorageConfig {
@@ -43,7 +43,7 @@ public final class GoogleCloudStorageConfig {
     public static final FileDataStoreFactory FILE_DATA_STORE_FACTORY = initFileDataStoreFactory();
 
     // User credential of Google Cloud Storage.
-    private static final String SERVICE_CREDENTIAL_PATHNAME = "json/steady-copilot-206205-9cc40ba503ed.json";
+    private static final String SERVICE_CREDENTIAL_PATHNAME = "json/credentials.json";
 
     // Client for Google Cloud Storage.
     public static final Storage STORAGE = initStorage();
@@ -53,17 +53,13 @@ public final class GoogleCloudStorageConfig {
      */
     @SneakyThrows
     private static GoogleCredentials authorize() {
-        Set<String> scopes = new HashSet<>();
-        scopes.add(StorageScopes.DEVSTORAGE_FULL_CONTROL);
-//        scopes.add(StorageScopes.DEVSTORAGE_READ_ONLY);
-//        scopes.add(StorageScopes.DEVSTORAGE_READ_WRITE);
-
+        Set<String> scopes = Set.of(StorageScopes.DEVSTORAGE_FULL_CONTROL);
         InputStream in = Thread.currentThread().getContextClassLoader()
                 .getResourceAsStream(SERVICE_CREDENTIAL_PATHNAME);
 
-        assert in != null;
-
-        return ServiceAccountCredentials.fromStream(in).createScoped(scopes);
+        return ServiceAccountCredentials
+                .fromStream(Objects.requireNonNull(in))
+                .createScoped(scopes);
     }
 
     @SneakyThrows
